@@ -1,0 +1,258 @@
+#Single-nucleus RNA-seq analysis
+#Processed using Trailmaker™ (Parse Biosciences, pipeline v1.4.0, 2024).
+#Input: fastq files
+#Steps:
+    #1.Demultiplexing
+    #2.Barcode correction
+    #3.Read alignment
+    #4.Transcript quantification
+
+#Output:
+  #A cell-by-gene count matrix automatically transferred to the Insight module for downstream analysis.
+  #Quality Control;
+  #Default Trailmaker filters removed;
+  #Doublets
+  #Low-quality nuclei (high mitochondrial content or low transcript counts)
+
+#Now, you can download your RDS file for use in R to make graphics.  
+#Working directory in R
+# Set working directory
+setwd("~/Documents/R/seurat_analysis")
+
+# Install core packages
+install.packages(c("Seurat", "Signac", "presto", "glmGamPoi", "BPCells"))
+
+# Optional: GitHub packages
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+remotes::install_github("satijalab/seurat-data", quiet = TRUE)
+remotes::install_github("satijalab/azimuth", quiet = TRUE)
+
+# Load libraries
+library(Seurat)
+library(Signac)
+
+#Import rds file and check file
+seurat_object <- readRDS("~/R/seurat_analysis/processed_matrix.rds")
+class(seurat_object)
+head(seurat_object@meta.data)
+dim(seurat_object)
+table(Idents(seurat_object))
+DimPlot(seurat_object, reduction = "umap", label = TRUE)
+
+#create UMAPs per gene, split by condition
+FeaturePlot(seurat_object, features = "gene1", split.by = "Condition")
+
+#Gene set score analysis
+# Define first gene list
+gene_list <- c("gene1", "gene2", "gene3")
+_________________________________________________________________________________
+#Anableps ventral dorsal markers 
+# Load HVGs
+hvg <- VariableFeatures(aacone)
+
+# Add vax2 (ENSABLG00000015884) if not already included
+genes_of_interest <- unique(c(hvg, "ENSABLG00000015884"))
+
+# Subset normalized expression matrix
+expr_sub <- GetAssayData(aacone, slot = "data")[genes_of_interest, ]
+
+# Convert to dense matrix (manageable subset)
+expr_dense <- as.matrix(expr_sub)
+
+# Extract expression for vax2
+vax2_expr <- expr_dense["ENSABLG00000015884", ]
+
+# Correlate all genes with vax2
+cor_matrix <- cor(t(expr_dense), vax2_expr, method = "pearson")
+
+# Sort correlations (excluding vax2 itself)
+cor_sorted <- sort(cor_matrix[, 1], decreasing = TRUE)
+cor_sorted <- cor_sorted[names(cor_sorted) != "ENSABLG00000015884"]
+
+# Extract top 3 correlated genes
+top3_genes <- head(names(cor_sorted), 3)
+
+# Compute mean expression for these top 3 genes
+top3_expr_means <- rowMeans(expr_dense[top3_genes, ])
+
+# Combine into a summary data frame
+top3_summary <- data.frame(
+  Gene = top3_genes,
+  Correlation_with_vax2 = cor_sorted[top3_genes],
+  Mean_Expression = top3_expr_means
+)
+
+# Display the summary
+top3_summary
+
+# ---- Visualize vax2 and its top 3 correlated genes ----
+FeaturePlot(aacone, features = c("ENSABLG00000015884", top3_genes), order = TRUE, ncol = 2)
+
+# Print results
+Top3_summaryCorrelation_with_vax2 		Mean_Expression
+ENSABLG00000009081 (ephb3)             0.3533150       2.1751430
+ENSABLG00000021032 (rerglb)            0.2882217       1.1616412
+ENSABLG00000008182 (nr2f5)            0.2749914       0.9699928
+
+
+# Identify highly variable genes
+hvg <- VariableFeatures(aacone)
+
+# Include tbx5b (dorsal marker) if not already in HVGs
+genes_of_interest <- unique(c(hvg, "ENSABLG00000021959"))
+
+# Get normalized expression data for selected genes
+expr_sub <- GetAssayData(aacone, slot = "data")[genes_of_interest, ]
+
+# Convert to dense matrix
+expr_dense <- as.matrix(expr_sub)
+
+# Extract expression for tbx5b
+tbx5b_expr <- expr_dense["ENSABLG00000021959", ]
+
+# Calculate Pearson correlation between all genes and tbx5b
+cor_matrix <- cor(t(expr_dense), tbx5b_expr, method = "pearson")
+
+# Sort by correlation strength
+cor_sorted <- sort(cor_matrix[, 1], decreasing = TRUE)
+cor_sorted <- cor_sorted[names(cor_sorted) != "ENSABLG00000021959"]
+
+# Select top 3 correlated genes
+dorsal_top3_genes <- head(names(cor_sorted), 3)
+
+# Summarize results
+dorsal_top3_summary <- data.frame(
+  Gene = dorsal_top3_genes,
+  Correlation_with_tbx5b = cor_sorted[dorsal_top3_genes],
+  Mean_Expression = rowMeans(expr_dense[dorsal_top3_genes, ])
+)
+
+# Display table
+dorsal_top3_summary
+
+# ---- Visualize tbx5b and its top 3 correlated genes ----
+FeaturePlot(aacone,  features = c("ENSABLG00000021959", dorsal_top3_genes), order = TRUE, ncol = 2)
+
+# Display the result
+dorsal_top3_summary
+Correlation_with_tbx5b 			Mean_Expression
+ENSABLG00000003787 (robo1)             0.3639770       0.1236935
+ENSABLG00000016611 (ank3)              0.3348509       0.5816652
+ENSABLG00000015558 (cngb3.2)             0.3195992       1.1244397
+______________________________________________________________________
+
+# Retrieve UMAP coordinates
+coords <- Embeddings(aacone, "umap")
+
+# Plot blended coexpression map
+ggplot(data = data.frame(coords, color = aacone$blend_color)) +
+  geom_point(aes(UMAP_1, UMAP_2, color = color), size = 0.7) +
+  scale_color_identity() +
+  theme_void() +
+  ggtitle("Coexpression of ephb3 (green) and cngb3.2 (magenta)")
+
+
+____________________________________________________________________________
+#Zebrafish ventral and dorsal markers
+# Identify highly variable genes
+hvg <- VariableFeatures(drcone)
+genes_of_interest <- unique(c(hvg, "vax2"))
+# Subset normalized expression data to genes of interest
+expr_sub <- GetAssayData(drcone, slot = "data")[genes_of_interest, ]
+# Convert to dense matrix (more memory-safe than full matrix)
+expr_dense <- as.matrix(expr_sub)
+# Extract expression vector for vax2
+vax2_expr <- expr_dense["vax2", ]
+# Compute Pearson correlations for all genes vs vax2
+cor_matrix <- cor(t(expr_dense), vax2_expr, method = "pearson")
+# Sort by descending correlation
+cor_sorted <- sort(cor_matrix[, 1], decreasing = TRUE)
+# Exclude vax2 itself
+cor_sorted <- cor_sorted[names(cor_sorted) != "vax2"]
+# Select top 3 correlated genes
+vax2_top3_genes <- head(names(cor_sorted), 3)
+# Create summary table with correlation and mean expression
+vax2_top3_summary <- data.frame(
+  Gene = vax2_top3_genes,
+  Correlation_with_vax2 = round(cor_sorted[vax2_top3_genes], 3),
+  Mean_Expression = round(rowMeans(expr_dense[vax2_top3_genes, ]), 3))
+# Display summary table
+vax2_top3_summary
+# ---- Visualize vax2 and its top 3 correlated genes ----
+FeaturePlot(drcone, features = c("vax2", vax2_top3_genes), order = TRUE, ncol = 2)
+
+Gene Correlation_with_vax2
+snap25a   snap25a                 0.474
+sccpdhb   sccpdhb                 0.401
+gngt2a-1 gngt2a-1                 0.389
+         Mean_Expression
+snap25a            0.305
+sccpdhb            0.618
+gngt2a-1           2.433
+
+
+# Ensure Seurat is loaded
+library(Seurat)
+
+# Check that LOC562466 exists in the dataset
+if (!"LOC562466" %in% rownames(drcone)) {
+  stop("Gene 'LOC562466' not found in drcone rownames. Check your dataset.")
+}
+
+# Ensure Seurat is loaded
+library(Seurat)
+
+# Check that grk1b exists in the dataset
+if (!"grk1b" %in% rownames(drcone)) {
+  stop("Gene 'grk1b' not found in drcone rownames. Check your dataset.")
+}
+
+# Identify highly variable genes
+hvg <- VariableFeatures(drcone)
+
+# Include grk1b if not already in HVGs
+genes_of_interest <- unique(c(hvg, "grk1b"))
+
+# Subset normalized expression data for these genes
+expr_sub <- GetAssayData(drcone, slot = "data")[genes_of_interest, ]
+
+# Convert to dense matrix
+expr_dense <- as.matrix(expr_sub)
+
+# Extract expression for grk1b
+bait_expr <- expr_dense["grk1b", ]
+
+# Compute Pearson correlation of all genes with grk1b
+cor_matrix <- cor(t(expr_dense), bait_expr, method = "pearson")
+
+# Sort correlations in decreasing order, excluding grk1b itself
+cor_sorted <- sort(cor_matrix[, 1], decreasing = TRUE)
+cor_sorted <- cor_sorted[names(cor_sorted) != "grk1b"]
+
+# Select top 3 correlated genes
+dorsal_top3_genes <- head(names(cor_sorted), 3)
+
+# Create summary table with correlation and mean expression
+dorsal_top3_summary <- data.frame(
+  Gene = dorsal_top3_genes,
+  Correlation_with_grk1b = round(cor_sorted[dorsal_top3_genes], 3),
+  Mean_Expression = round(rowMeans(expr_dense[dorsal_top3_genes, ]), 3)
+)
+
+# Display top 3 correlated genes
+dorsal_top3_summary
+
+# ---- Visualize grk1b and top 3 correlated genes ----
+FeaturePlot(
+  drcone,
+  features = c("grk1b", dorsal_top3_genes),
+  order = TRUE,
+  ncol = 2
+)
+
+Gene Correlation_with_grk1b Mean_Expression
+gngt2b                   gngt2b                  0.639           4.707
+oxr1a                     oxr1a                  0.583           1.140
+si:ch73-28h20.1 si:ch73-28h20.1                  0.522           1.402
