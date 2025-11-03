@@ -1,0 +1,33 @@
+# Spatial transcriptomics (10X Genomics) 
+
+# Step 1: Creating a custon reference:
+    # Step 1.1:  Filter the GTF
+
+ spaceranger mkgtf "Full_annotation.gtf" \
+"filtered_output.gtf" \
+--attribute="choose_yours"
+
+    # Step 1.2: C Build the Reference
+
+spaceranger mkref \
+--genome="referece_directory_folder" \
+--fasta="genome.fa" \
+--genes="filtered_output.gtf" \
+--nthreads="Set_CPU_usage"
+
+
+# Step 2: Run Spatial Gene Expression Analysis
+
+spaceranger count \
+  --id="output_folder" \
+  --transcriptome="path_to_reference_folder" \
+  --sample="Prefix_of_nample_files \
+  --fastqs="Directory_containing_your_FASTQ_files" \
+  --image="Path_to__tissue_image.tiff" \
+  --slide="Slide_serial_number" \
+  --area="Capture_area_ID" \
+  --localcores="Set_CPU_usage" \
+  --localmem="Set_RAM_usage"\
+
+#Step 3: Downstream analysis
+Data visualization and generation of specific gene expression images were performed using Loupe Browser 8.0.0 and RStudio.
