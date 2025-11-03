@@ -1,0 +1,36 @@
+#Machine learning prediction of opsin spectral sensitivity
+M#achine learning approach that infers maximum wavelength sensitive (λmax) directly from amino acid sequences
+#Opsin sequences from D. rerio (GRCz11/danRer11), Oryzias latipes (GCF_002234675.1, F. heteroclitus (GCF_011125445.2), Poecilia reticulata (GCF_000633615.1), and A. anableps (GCA_014839685.1) were obtained from public genome browsers.
+
+#Input
+#FASTA file containing opsin amino-acid sequences.
+#Save as .txt
+#Here is an exemple:
+#>Dr_sws1
+
+MDAWAVQFGNASKVSPFEGEQYHIAPKWAFYLQAAFMGFVFIVGTPMNGI
+VLFVTMKYKKLRQPLNYILVNISLAGFIFDTFSVSQVSVCAARGYYSLGY
+TLCSMEAAMGSIAGLVTGWSLAVLAFERYVVICKPFGSFKFGQGQAVGAV
+VFTWIIGTACATPPFFGWSRYIPEGLGTACGPDWYTKSEEYNSESYTYFL
+LITCFMMPMTIIIFSYSQLLGALRAVAAQQAESESTQKAEREVSRMVVVM
+VGSFVLCYAPYAVTAMYFANSDEPNKDYRLVAIPAFFSKSSSVYNPLIYA
+FMNKQFNACIMETVFGKKIDESSEVSSKTETSSVSA
+
+>Dr_sws2
+MKQQQQTPELFEDFHMPITLDVSNISAYSPFLVPQDHLGHSGVFMGMSAF
+MLFLFIAGTAINVLTIVCTIQYKKLRSHLNYILVNLAISNLWVSVFGSSV
+AFYAFYKKYFVFGPIGCKIEGFTSTIGGMVSLWSLAVVALERWLVICKPL
+GNFTFKTPHAIAGCILPWCMALAAGLPPLLGWSRYIPEGLQCSCGPDWYT
+TNNKFNNESYVMFLFCFCFAVPFSTIVFCYGQLLITLKLAAKAQADSAST
+QKAEREVTKMVVVMVFGFLICWGPYAIFAIWVVSNRGAPFDLRLATIPSC
+LCKASTVYNPVIYVLMNKQFRSCMMKMVFNKNIEEDEASSSSQVTQVSSV
+APEK
+
+
+  
+
+#Dowload the software from https://github.com/VisualPhysiologyDB/optics.
+#Frazer, S. A. & Oakley, T. H. Accessible and Robust Machine Learning Approaches to Improve the Opsin Genotype-Phenotype Map. bioRxiv, 2025.2008.2022.671864 (2025). https://doi.org/10.1101/2025.08.22.671864
+
+
+python optics_predictions.py -i input_name.txt -p output_name_ -m wildtype-vert-mnm --blastp --bootstrap --visualize_bootstrap --save_viz_as svg --full_spectrum_xaxis
